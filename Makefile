@@ -41,10 +41,10 @@ MKGOPATH := mkdir -p $(shell dirname $(GOPATH)/src/$(REPOPATH)) && ln -s -f $(sh
 
 MINIKUBEFILES := $(shell go list  -f '{{join .Deps "\n"}}' ./cmd/minikube/ | grep github.com/jimmidyson/minishift | xargs go list -f '{{ range $$file := .GoFiles }} {{$$.Dir}}/{{$$file}}{{"\n"}}{{end}}')
 
-out/minishift: gendocs out/minishift-$(GOOS)-$(GOARCH)
+out/minishift: out/minishift-$(GOOS)-$(GOARCH)
 	cp $(BUILD_DIR)/minishift-$(GOOS)-$(GOARCH) $(BUILD_DIR)/minishift
 
-out/openshift: hack/get_openshift.go
+out/openshift: hack/get_openshift.go gendocs
 	$(MKGOPATH)
 	mkdir out 2>/dev/null || true
 	cd $(GOPATH)/src/$(REPOPATH) && go run hack/get_openshift.go v1.3.0-alpha.2
@@ -70,14 +70,14 @@ pkg/minikube/cluster/assets.go: out/openshift $(GOPATH)/bin/go-bindata
 
 $(GOPATH)/bin/go-bindata:
 	$(MKGOPATH)
-	go get github.com/jteeuwen/go-bindata/...
+	GOBIN=$(GOPATH)/bin go get github.com/jteeuwen/go-bindata/...
 
 $(GOPATH)/bin/gh-release:
 	$(MKGOPATH)
 	go get github.com/progrium/gh-release
 
 .PHONY: gendocs
-gendocs: out/minishift $(shell find cmd)
+gendocs: $(shell find cmd)
 	$(MKGOPATH)
 	cd $(GOPATH)/src/$(REPOPATH) && go run -ldflags="-X github.com/jimmidyson/minishift/pkg/version.version=$(shell cat VERSION)" gen_help_text.go
 
